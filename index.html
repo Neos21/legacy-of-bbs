@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Test</title>
+    <link rel="icon" href="favicon.ico">
+    <style>
+
+*, ::before, ::after { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  overflow: hidden scroll;
+  cursor: default;
+}
+
+.loading,
+.error,
+.announce {
+  color: #fff;
+  font-weight: bold;
+  background: #ff4040;
+}
+
+table {
+  width: 100%;
+  border: 1px solid #000;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #000;
+  padding: .1em .25em;
+  vertical-align: top;
+}
+
+thead th { text-align: center; font-weight: normal; white-space: nowrap; background: #fffacd; }
+thead .column-id      { width: 3.5em; }
+thead .column-date    { width: 7em; }
+thead .column-name    { width: 8em; }
+thead .column-count   { width: 5em; }
+thead .column-rank    { width: 8em; }
+
+tbody tr:nth-child(odd ) { color: #a52a2a; background: #ffc125; }
+tbody tr:nth-child(even) { color: #a52a2a; background: #ffa500; }
+tbody .column-id      { text-align: right;  white-space: nowrap; }
+tbody .column-date    { text-align: center; white-space: nowrap; }
+tbody .column-comment { white-space: pre-wrap; }
+tbody .column-count   { text-align: right; }
+tbody .column-rank    { text-align: center; }
+
+    </style>
+    <script>
+
+/** @type {number} デフォルトのページ番号 */
+const defaultPage = 1;
+
+/** @type {number} タイムゾーンのオフセット値 */
+const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
+
+/**
+ * ページ番号を特定する・数値変換出来なかった場合は `null` とする
+ * 
+ * @param {string | null | undefined} paramPage ページ番号のパラメータ
+ * @return {number | null} ページ番号、数値変換できなければ `null`
+ */
+const detectPage = (paramPage) => {
+  if(paramPage == null || String(paramPage).trim() ==='') return null;
+  const numParamPage = Number(paramPage);
+  if(Number.isNaN(numParamPage)) return null;
+  return Math.trunc(numParamPage);
+};
+
+/**
+ * 日時文字列を JST に直し整形する
+ * 
+ * @param {string} dateString SQLite が管理する `YYYY-MM-DD HH:mm` 形式の文字列・UTC 想定
+ * @return {string} `YYYY-MM-DD HH:mm` 形式の文字列・確実に JST に変換した値
+ */
+const convertToJst = (dateString) => {
+  if(dateString == null || String(dateString).toString() === '') return '[ERROR]';
+  const date = new Date(dateString);
+  const jstDate = new Date(date.getTime() + timezoneOffset);
+  return               jstDate.getFullYear()
+    + '-'    + ('0' + (jstDate.getMonth() + 1)).slice(-2)
+    + '-'    + ('0' +  jstDate.getDate()      ).slice(-2)
+    + '<br>' + ('0' +  jstDate.getHours()     ).slice(-2)
+    + ':'    + ('0' +  jstDate.getMinutes()   ).slice(-2);
+};
+
+/**
+ * コメント文字列の改行を有効にする
+ * 
+ * @param {string} comment コメント文字列
+ * @return {string} 改行コードを変換したコメント文字列
+ */
+const convertComment = (comment) => comment.replace((/\\n/g), '\n');
+
+
+// First View
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const paramPage = new URL(location.href).searchParams.get('page');
+    const page = detectPage(paramPage);
+    const getPostsUrl = new URL('/api/posts', location.origin);
+    if(page != null) getPostsUrl.search = new URLSearchParams({ page });
+    
+    const getResponse = await fetch(getPostsUrl.toString());
+    const getResponseJson = await getResponse.json();
+    /** @type {number} 正しいページ番号 */
+    const responsePage = getResponseJson.page;
+    /** @type {Array<{ id: number; date: string; comment: string; count: number; rank: string; }>} 投稿一覧 */
+    const posts        = getResponseJson.posts;
+    
+    const validUrl = new URL(location.href);
+    validUrl.search = new URLSearchParams(responsePage === defaultPage ? {} : { page: responsePage });
+    history.replaceState(null, null, validUrl.toString());
+    console.log('GET', { paramPage, page, posts });
+    document.getElementById('posts-tbody').innerHTML = posts.map((post) => `
+      <tr class="${post.name === 'Announce Bot' && post.count === 0 ? 'announce' : ''}">
+        <td class="column-id"     >${post.id}</td>
+        <td class="column-date"   >${convertToJst(post.date)}</td>
+        <td class="column-name"   >${post.name}</td>
+        <td class="column-comment">${convertComment(post.comment)}</td>
+        <td class="column-count"  >${post.count}回</td>
+        <td class="column-rank"   >${post.rank}</td>
+      </tr>
+    `).join('');
+    
+    //const postResponse = await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ comment: 'fuga' })});
+    //const postResponseText = await postResponse.text();
+    //console.log('POST', postResponseText);
+    //document.body.insertAdjacentHTML('beforeend', `<p>${postResponseText}</p>`);
+  }
+  catch(error) {
+    console.error(error);
+    document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="error">エラーが発生しました</th></tr>';
+  }
+});
+
+    </script>
+  </head>
+  <body>
+
+<h1>Test</h1>
+
+<div id="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th class="column-id"     >No</th>
+        <th class="column-date"   >Date</th>
+        <th class="column-name"   >Name</th>
+        <th class="column-comment">Message</th>
+        <th class="column-count"  >回数</th>
+        <th class="column-rank"   >昇進状態</th>
+      </tr>
+    </thead>
+    <tbody id="posts-tbody">
+      <tr>
+        <th colspan="6" class="loading">Loading...</th>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  </body>
+</html>

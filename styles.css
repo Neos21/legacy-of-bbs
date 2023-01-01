@@ -33,9 +33,10 @@ p {
 }
 
 button {
-  color: #000;
   border: 1px solid #000;
   border-radius: 0;
+  color: #000;
+  font-size: 16px;  /* For iOS Prevent Zoom */
   background: #f0f0f0;
   cursor: pointer;
 }
@@ -140,9 +141,10 @@ form {
   background: #ffd700;
 }
 input[type="text"], textarea {
-  color: #000;
   border: 1px solid #767676;
   border-radius: 0;
+  color: #000;
+  font-size: 16px;  /* For iOS Prevent Zoom */
   background: #fff;
 }
 textarea {

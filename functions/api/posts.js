@@ -82,7 +82,7 @@ const validate = (body) => {
  * @return {string} `YYYY-MM-DD HH:mm` 形式の文字列
  */
 const getNowDateString = () => {
-  const date = new Date();
+  const date = new Date(Date.now() + ((new Date().getTimezoneOffset() + 540) * 60000));
   return            date.getFullYear()
     + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
     + '-' + ('0' +  date.getDate()      ).slice(-2)

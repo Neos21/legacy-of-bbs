@@ -72,8 +72,6 @@ $ wrangler pages dev . --local --persist
 
 ```bash
 $ wrangler pages publish ./ --project-name legacy-of-bbs
-Enter the name of your new project: legacy-of-bbs 
-Enter the production branch name: master 
 ✨ Successfully created the 'legacy-of-bbs' project.
 ```
 

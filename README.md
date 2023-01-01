@@ -1,5 +1,7 @@
 # Legacy of BBS
 
+- __[Enter The Website](https://legacy-of-bbs.pages.dev/)__
+
 
 ## Init Cloudflare Pages
 
@@ -79,3 +81,8 @@ $ wrangler pages publish ./ --project-name legacy-of-bbs
 ## Cloudflare Pages Functions
 
 - `./functions/api/posts.js` : `export async function onRequestGet(eventContext)` → GET `/api/posts`
+
+
+## Links
+
+- [Neo's World](https://neos21.net/)

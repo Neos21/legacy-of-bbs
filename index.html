@@ -3,60 +3,29 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Test</title>
+    <title>懐かし掲示板 BBS</title>
     <link rel="icon" href="favicon.ico">
-    <style>
-
-*, ::before, ::after { box-sizing: border-box; }
-
-html {
-  height: 100%;
-  overflow: hidden scroll;
-  cursor: default;
-}
-
-.loading,
-.error,
-.announce {
-  color: #fff;
-  font-weight: bold;
-  background: #ff4040;
-}
-
-table {
-  width: 100%;
-  border: 1px solid #000;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #000;
-  padding: .1em .25em;
-  vertical-align: top;
-}
-
-thead th { text-align: center; font-weight: normal; white-space: nowrap; background: #fffacd; }
-thead .column-id      { width: 3.5em; }
-thead .column-date    { width: 7em; }
-thead .column-name    { width: 8em; }
-thead .column-count   { width: 5em; }
-thead .column-rank    { width: 8em; }
-
-tbody tr:nth-child(odd ) { color: #a52a2a; background: #ffc125; }
-tbody tr:nth-child(even) { color: #a52a2a; background: #ffa500; }
-tbody .column-id      { text-align: right;  white-space: nowrap; }
-tbody .column-date    { text-align: center; white-space: nowrap; }
-tbody .column-comment { white-space: pre-wrap; }
-tbody .column-count   { text-align: right; }
-tbody .column-rank    { text-align: center; }
-
-    </style>
+    <link rel="stylesheet" href="styles.css">
     <script>
+
+// Global Variables
+// ==============================
+
+/** @type {number} 表示中のページ番号 */
+let currentPage = 1;
+
+/** @type {number} 1ページ分として表示する投稿の件数・API レスポンス上は最大でこの件数 `+1` の投稿が返る (Next ボタンの表示制御のため) */
+const postsPerPage = 100;
 
 /** @type {number} デフォルトのページ番号 */
 const defaultPage = 1;
 
 /** @type {number} タイムゾーンのオフセット値 */
 const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
+
+
+// Service Functions
+// ==============================
 
 /**
  * ページ番号を特定する・数値変換出来なかった場合は `null` とする
@@ -79,14 +48,21 @@ const detectPage = (paramPage) => {
  */
 const convertToJst = (dateString) => {
   if(dateString == null || String(dateString).toString() === '') return '[ERROR]';
-  const date = new Date(dateString);
-  const jstDate = new Date(date.getTime() + timezoneOffset);
+  const jstDate = new Date(new Date(dateString).getTime() + timezoneOffset);
   return               jstDate.getFullYear()
     + '-'    + ('0' + (jstDate.getMonth() + 1)).slice(-2)
     + '-'    + ('0' +  jstDate.getDate()      ).slice(-2)
     + '<br>' + ('0' +  jstDate.getHours()     ).slice(-2)
     + ':'    + ('0' +  jstDate.getMinutes()   ).slice(-2);
 };
+
+/**
+ * HTML をサニタイズする
+ * 
+ * @param {string} value 文字列
+ * @return {string} サニタイズした文字列
+ */
+const sanitize = (value) => value.replace((/&/g), '&amp;').replace((/</g), '&lt;').replace((/>/g), '&gt;').replace((/"/g), '&quot;');
 
 /**
  * コメント文字列の改行を有効にする
@@ -96,56 +72,209 @@ const convertToJst = (dateString) => {
  */
 const convertComment = (comment) => comment.replace((/\\n/g), '\n');
 
+/**
+ * 値を確実に文字列に変換する
+ * 
+ * @param {string | null | undefined} value 値
+ * @return {string} `null`・`undefined` の場合は空文字・その他は `trim()` した値
+ */
+const convertToTrimmedString = (value) => (value == null) ? '' : String(value).trim();
 
-// First View
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const paramPage = new URL(location.href).searchParams.get('page');
-    const page = detectPage(paramPage);
-    const getPostsUrl = new URL('/api/posts', location.origin);
-    if(page != null) getPostsUrl.search = new URLSearchParams({ page });
-    
-    const getResponse = await fetch(getPostsUrl.toString());
-    const getResponseJson = await getResponse.json();
-    /** @type {number} 正しいページ番号 */
-    const responsePage = getResponseJson.page;
-    /** @type {Array<{ id: number; date: string; comment: string; count: number; rank: string; }>} 投稿一覧 */
-    const posts        = getResponseJson.posts;
-    
-    const validUrl = new URL(location.href);
-    validUrl.search = new URLSearchParams(responsePage === defaultPage ? {} : { page: responsePage });
-    history.replaceState(null, null, validUrl.toString());
-    console.log('GET', { paramPage, page, posts });
-    document.getElementById('posts-tbody').innerHTML = posts.map((post) => `
-      <tr class="${post.name === 'Announce Bot' && post.count === 0 ? 'announce' : ''}">
+/**
+ * API から投稿を取得する
+ * 
+ * @param {number} paramPage 取得するページ番号・クエリ文字列の場合は `detectPage()` で正常値に変換済のモノを使用する
+ * return { posts: Array<{ id: number; date: string; comment: string; count: number; rank: string; }>; page: number; } 投稿一覧と正しいページ番号
+ */
+const fetchPosts = async (paramPage) => {
+  const getPostsUrl = new URL('/api/posts', location.origin);
+  if(paramPage != null) getPostsUrl.search = new URLSearchParams({ page: paramPage });
+  
+  const getResponse = await fetch(getPostsUrl.toString());
+  const getResponseJson = await getResponse.json();
+  const posts = getResponseJson.posts;
+  const page  = getResponseJson.page;
+  return { posts, page};
+};
+
+/**
+ * 投稿を出力する
+ * 
+ * @param {Array<{ id: number; date: string; comment: string; count: number; rank: string; }>} posts 投稿一覧
+ * @param {number} page 正しいページ番号
+ */
+const showPosts = (posts, page, isPushState = false) => {
+  // 表示件数より1件多くレスポンスされた場合
+  const hasNext = posts.length >= postsPerPage + 1;
+  
+  // テーブルを出力する
+  const tbody = document.getElementById('posts-tbody');
+  if(posts.length === 0) {
+    tbody.innerHTML = '<tr><td class="announce" colspan="6">投稿はありません</td></tr>';
+  } else {
+    if(hasNext) posts.pop();  // 表示件数より1件多かった場合は末尾の1件を削除する
+    tbody.innerHTML = posts.map((post) => {
+      if(post.name === 'Announce Bot') return `<tr><td class="column-id">${post.id}</td><td class="announce" colspan="5">${convertComment(sanitize(post.comment))}</td></tr>`;
+      return `<tr>
         <td class="column-id"     >${post.id}</td>
         <td class="column-date"   >${convertToJst(post.date)}</td>
-        <td class="column-name"   >${post.name}</td>
-        <td class="column-comment">${convertComment(post.comment)}</td>
+        <td class="column-name"   >${sanitize(post.name)}</td>
+        <td class="column-comment">${convertComment(sanitize(post.comment))}</td>
         <td class="column-count"  >${post.count}回</td>
         <td class="column-rank"   >${post.rank}</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
+  }
+  
+  // Push or Replace URL
+  const validUrl = new URL(location.href);
+  validUrl.search = new URLSearchParams(page === defaultPage ? {} : { page });
+  history[isPushState ? 'pushState' : 'replaceState']({ page }, null, validUrl.toString());
+  // Current Page
+  currentPage = page;
+  
+  // Back ボタン
+  const hasBack = page > defaultPage;
+  document.getElementById('nav-back-button').style.display = hasBack ? 'inline' : 'none';
+  // Next ボタン
+  document.getElementById('nav-next-button').style.display = hasNext ? 'inline' : 'none';
+};
+
+/** 初期表示時の処理 */
+const onFirstView = async () => {
+  try {
+    // Detect Param Page
+    const rawParamPage = new URL(location.href).searchParams.get('page');
+    const paramPage = detectPage(rawParamPage);
     
-    //const postResponse = await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ comment: 'fuga' })});
-    //const postResponseText = await postResponse.text();
-    //console.log('POST', postResponseText);
-    //document.body.insertAdjacentHTML('beforeend', `<p>${postResponseText}</p>`);
+    // Fetch And Show
+    const { posts, page } = await fetchPosts(paramPage);
+    showPosts(posts, page);
+    
+    console.log('Get Posts', { rawParamPage, paramPage, page, posts });
   }
   catch(error) {
-    console.error(error);
-    document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="error">エラーが発生しました</th></tr>';
+    console.error('Get Posts : Failed', error);
+    document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="announce">エラーが発生しました</th></tr>';
   }
+};
+
+/** 投稿時の処理 */
+const onPost = async () => {
+  const formError   = document.getElementById('form-error');
+  const inputSubmit = document.getElementById('input-submit')
+  try {
+    // Validate
+    formError.style.display = 'none';
+    inputSubmit.disabled = true;
+    const name    = convertToTrimmedString(document.getElementById('input-name'   ).value);
+    const comment = convertToTrimmedString(document.getElementById('input-comment').value);
+    if(name === '' || comment === '') throw new Error('Invalid Input');
+    
+    // Post
+    const postUrl = new URL('/api/posts', location.origin).toString();
+    const postResponse = await fetch(postUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, comment })
+    });
+    const postResponseJson = await postResponse.json();
+    if(!postResponse.ok) {
+      console.error('Post : Failed : Error Response',  { name, comment, postResponseJson });
+      throw new Error('Error Response');
+    }
+    
+    console.log('Post', { name, comment, postResponseJson });
+    document.getElementById('input-comment').value = '';  // Reset
+    document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="announce">投稿完了・再読込中…</th></tr>';
+    
+    // Re-Show Latest Posts
+    const { posts, page } = await fetchPosts(defaultPage);
+    showPosts(posts, page, true);
+  }
+  catch(error) {
+    console.error('Post : Failed', error);
+    formError.style.display = 'block';
+    formError.innerText = 'エラーが発生しました';
+    inputSubmit.disabled = false;
+  }
+};
+
+// Controllers
+// ==============================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await onFirstView();
+  
+  // Header
+  document.getElementById('button-home'       ).addEventListener('click', () => location.href = 'https://neos21.net/');
+  document.getElementById('button-ranks'      ).addEventListener('click', () => location.href = '/ranks'             );
+  document.getElementById('button-rank-titles').addEventListener('click', () => location.href = '/rank-titles'       );
+  
+  // Form
+  const inputName    = document.getElementById('input-name'   );
+  const inputComment = document.getElementById('input-comment');
+  const inputSubmit  = document.getElementById('input-submit' );
+  inputSubmit.disabled = true;  // Init
+  document.getElementById('input-form').addEventListener('input', () => {
+    inputSubmit.disabled = inputName.value.trim() === '' || inputComment.value.trim() === '';
+  });
+  inputSubmit.addEventListener('click', async (event) => {
+    event.preventDefault();
+    await onPost();
+  });
+  
+  // Footer
+  document.getElementById('nav-back-button').addEventListener('click', async () => {
+    const { posts, page } = await fetchPosts(currentPage - 1);
+    showPosts(posts, page, true);
+  });
+  document.getElementById('nav-next-button').addEventListener('click', async () => {
+    const { posts, page } = await fetchPosts(currentPage + 1);
+    showPosts(posts, page, true);
+  });
+  
+  // Pop State
+  window.addEventListener('popstate', async (event) => {
+    const targetPage = event?.state?.page ?? defaultPage;
+    const { posts, page } = await fetchPosts(targetPage);
+    showPosts(posts, page);
+  });
 });
 
     </script>
   </head>
   <body>
 
-<h1>Test</h1>
+<header>
+  <div>
+    <button type="button" id="button-home"       >HOME</button>
+    <button type="button" id="button-ranks"      >ランキング</button>
+    <button type="button" id="button-rank-titles">昇進資格説明</button>
+  </div>
+  <h1><span>懐かし掲示板 BBS</span></h1>
+</header>
 
-<div id="table-wrapper">
-  <table>
+<form id="input-form">
+  <div class="form-grid">
+    <div style="grid-area: form-name">
+      <label for="input-name">
+        Name
+        <input type="text" id="input-name" value="" placeholder="Name" size="12" maxlength="30">
+      </label>
+    </div>
+    <div style="grid-area: form-comment">
+      <textarea id="input-comment" placeholder="Message" cols="40" rows="4" maxlength="1000"></textarea>
+    </div>
+    <div style="grid-area: form-submit">
+      <button type="submit" id="input-submit" disabled>送信</button>
+    </div>
+  </div>
+  <p class="form-error" id="form-error"></p>
+</form>
+
+<main>
+  <table class="posts-table">
     <thead>
       <tr>
         <th class="column-id"     >No</th>
@@ -158,11 +287,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     </thead>
     <tbody id="posts-tbody">
       <tr>
-        <th colspan="6" class="loading">Loading...</th>
+        <th colspan="6" class="announce">Loading...</th>
       </tr>
     </tbody>
   </table>
-</div>
+</main>
+
+<footer>
+  <button type="button" id="nav-back-button">Back</button>
+  <button type="button" id="nav-next-button">Next</button>
+</footer>
 
   </body>
 </html>

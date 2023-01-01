@@ -1,0 +1,211 @@
+
+/* Globals
+ * ============================== */
+
+*, ::before, ::after { box-sizing: border-box; }
+
+html {
+  height: 100%;
+  overflow: hidden scroll;
+  color: #a52a2a;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, YuGothic, "Yu Gothic", "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  background: linear-gradient(45deg, #fafe9a    0%, #fafe9a   .7%,
+                                     #f9d99e   .7%, #f9d99e 49.3%,
+                                     #fafe9a 49.3%, #fafe9a 50.7%,
+                                     #f6cf7e 50.7%, #f6cf7e 99.3%,
+                                     #fafe9a 99.3%, #fafe9a  100%) top left / 150px 150px;
+  cursor: default;
+}
+
+body {
+  margin: 1rem;
+  padding-bottom: 2rem;
+}
+
+a {
+  color: #228b22;
+  text-decoration: underline;
+}
+a:hover, a:focus { text-decoration: none; }
+
+p {
+  margin: 1em 0;
+}
+
+button {
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 0;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+button:hover, button:focus { background: #e5e5e5; }
+button:disabled { color: #999; cursor: not-allowed; }
+
+header {
+  margin: 1em 0 1.2em;
+  text-align: center;
+}
+header .back-button-container { text-align: left; }
+
+header h2 { font-size: 1rem; }
+header h2::before { display: inline; content: "<<< "; }
+header h2::after  { display: inline; content: " >>>"; }
+
+main {  /* Table Wrapper */
+  margin: 1em 0;
+  display: block;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border: 1px solid #000;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #000;
+  padding: .3em;
+  vertical-align: top;
+}
+thead th { padding: .1em .3em; text-align: center; font-weight: normal; white-space: nowrap; background: #fffacd; vertical-align: middle; }
+tbody tr:nth-child(odd ) { background: #ffc125; }
+tbody tr:nth-child(even) { background: #ffa500; }
+
+/* ローディング・エラー時・Announce Bot 表示用*/
+tbody .announce {
+  color: #fff;
+  font-weight: bold;
+  background: #ff4040;
+}
+
+
+/* Main Page : Header Title
+ * ============================== */
+
+header div {
+  margin: 1em 0;
+}
+header h1 {
+  margin: 0;
+  display: inline-block;
+  border: 2px solid #fff;
+  padding: .5rem;
+  font-size: 2rem;
+  white-space: nowrap;
+  line-height: 1;
+  background: #fdae53;
+  transform: scaleX(1.1);
+  user-select: none;
+}
+header h1 span {
+  position: relative;
+  z-index: 1;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke-width: 0 !important;
+  background: linear-gradient(to bottom, #fc1c19 20%, #fffc4b 49%, #fffc4b 51%, #fc1c19 80%);
+  -webkit-background-clip: text;
+}
+header h1 span::before {
+  display: inline;
+  content: "懐かし掲示板 BBS";
+  position: absolute;
+  top: .125em;
+  left: -.075em;
+  z-index: -1;
+  -webkit-text-fill-color: #bd1210;
+  -webkit-text-stroke-width: 0 !important;
+}
+@media (max-width: 360px) {
+  header h1 { font-size: 1.3rem; }
+}
+
+
+/* Main Page : Input Form
+ * ============================== */
+
+form {
+  margin: 1em 0;
+  text-align: center;
+}
+.form-grid {
+  padding: .5em .75em;
+  display: inline-grid;
+  grid-template-areas: "form-name form-comment"
+                       ".         form-submit";
+  align-items: end;  /* Vertical Align Bottom */
+  gap: .5em;
+  border: 1px solid #000;
+  white-space: nowrap;
+  background: #ffd700;
+}
+input[type="text"], textarea {
+  color: #000;
+  border: 1px solid #767676;
+  border-radius: 0;
+  background: #fff;
+}
+textarea {
+  min-width: 15em;
+  min-height: 5em;
+  vertical-align: bottom;
+}
+.form-error {
+  display: none;
+  color: #f00;
+  font-weight: bold;
+}
+@media (max-width: 600px) {
+  .form-grid { grid-template-areas: "form-name" "form-comment" "form-submit"; }
+  textarea { width: 15em; }
+}
+
+
+/* Main Page : Posts Table
+ * ============================== */
+
+.posts-table thead th              { color: #000; }
+.posts-table thead .column-id      { width: 3.5em; }
+.posts-table thead .column-date    { width: 7em; }
+.posts-table thead .column-name    { width: 8em; min-width: 6em; }
+.posts-table thead .column-comment { min-width: 12em; }
+.posts-table thead .column-count   { width: 5em; }
+.posts-table thead .column-rank    { width: 8em; }
+
+.posts-table tbody .column-id      { text-align: right;  white-space: nowrap; }
+.posts-table tbody .column-date    { text-align: center; white-space: nowrap; }
+.posts-table tbody .column-name    { word-break: break-all; }
+.posts-table tbody .column-comment { white-space: pre-wrap; word-break: break-all; }
+.posts-table tbody .column-count   { text-align: right; white-space: nowrap; }
+.posts-table tbody .column-rank    { text-align: center; }
+
+
+/* Main Page : Footer
+ * ============================== */
+
+footer {
+  margin: 1em 0;
+  text-align: center;
+}
+
+#nav-back-button, #nav-next-button { display: none; }
+
+
+/* Ranks Page
+ * ============================== */
+
+.ranks-table { margin: 0 auto; width: auto; }
+.ranks-table tbody td { vertical-align: middle; }
+.ranks-table tbody .column-no    { white-space: nowrap; }
+.ranks-table tbody .column-name  { min-width: 6em; word-break: break-all; }
+.ranks-table tbody .column-count { text-align: right; white-space: nowrap; }
+.ranks-table tbody .column-rank  { text-align: right; }
+
+
+/* Rank Titles Page
+ * ============================== */
+
+.rank-titles-table { margin: 0 auto; width: auto; }
+.rank-titles-table tbody td { background: #fff; }
+.rank-titles-table tbody .column-rank  { padding-right: 2em; }
+.rank-titles-table tbody .column-count { padding-left : 2em; text-align: right; }

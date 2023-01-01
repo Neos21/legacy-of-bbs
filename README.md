@@ -53,6 +53,9 @@ $ wrangler d1 execute legacy-of-bbs --local --command='CREATE TABLE IF NOT EXIST
 $ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('Name 1', '2022-12-30 00:01:02', 'Comment 1\nTest', 1, '初心者')"
 $ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('名前 2', '2022-12-31 01:02:03', 'コメント 2 Test', 1, '初心者')"
 $ wrangler d1 execute legacy-of-bbs --local --command='SELECT * FROM posts ORDER BY id DESC'
+# Delete
+$ wrangler d1 execute legacy-of-bbs --local --command='DELETE FROM posts'
+$ wrangler d1 execute legacy-of-bbs --local --command='DELETE FROM ranks'
 ```
 
 

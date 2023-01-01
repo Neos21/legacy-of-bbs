@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>懐かし掲示板 BBS - ランキング</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+
+// Service Functions
+// ==============================
+
+/**
+ * HTML をサニタイズする
+ * 
+ * @param {string} value 文字列
+ * @return {string} サニタイズした文字列
+ */
+const sanitize = (value) => value.replace((/&/g), '&amp;').replace((/</g), '&lt;').replace((/>/g), '&gt;').replace((/"/g), '&quot;');
+
+/** 初期表示時の処理 */
+const onFirstView = async () => {
+  const tbody = document.getElementById('ranks-tbody');
+  try {
+    // Get Ranks
+    const getRanksUrl = new URL('/api/ranks', location.origin);
+    const getResponse = await fetch(getRanksUrl.toString());
+    const getResponseJson = await getResponse.json();
+    
+    /** @type {Array<{ name: string; count: number; rank: string; }>} ランキング一覧 */
+    const ranks = getResponseJson.ranks;
+    tbody.innerHTML = ranks.map((rank, index) => `
+      <tr>
+        <td class="column-no"   >■${index + 1}位</td>
+        <td class="column-name" >${sanitize(rank.name)}</td>
+        <td class="column-count">${rank.count}回</td>
+        <td class="column-rank" >${rank.rank}</td>
+      </tr>
+    `).join('');
+    document.getElementById('ranks-caption').innerText = `総投稿者数 → ${ranks.length}人`;
+  }
+  catch(error) {
+    console.error('Get Ranks : Failed', error);
+    tbody.innerHTML = '<tr><th colspan="4" class="announce">エラーが発生しました</th></tr>';
+  }
+};
+
+
+// Controllers
+// ==============================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await onFirstView();
+  
+  document.getElementById('button-back').addEventListener('click', () => location.href = '/');
+});
+
+    </script>
+  </head>
+  <body>
+
+<header>
+  <div class="back-button-container">
+    <button type="button" id="button-back">戻る</button>
+  </div>
+  <h2>ランキング</h2>
+</header>
+
+<main>
+  <table class="ranks-table">
+    <caption id="ranks-caption"></caption>
+    <thead>
+      <tr>
+        <th class="column-no"   >ランキング</th>
+        <th class="column-name" >お名前</th>
+        <th class="column-count">投稿回数</th>
+        <th class="column-rank" >昇進状態</th>
+      </tr>
+    </thead>
+    <tbody id="ranks-tbody">
+      <tr>
+        <th colspan="4" class="announce">Loading...</th>
+      </tr>
+    </tbody>
+  </table>
+</main>
+
+  </body>
+</html>

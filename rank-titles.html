@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>懐かし掲示板 BBS - 昇進資格</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+
+// Service Functions
+// ==============================
+
+/** 初期表示時の処理 */
+const onFirstView = async () => {
+  const tbody = document.getElementById('rank-titles-tbody');
+  try {
+    // Get Rank Titles
+    const getRankTitlesUrl = new URL('/api/rank-titles', location.origin);
+    const getResponse = await fetch(getRankTitlesUrl.toString());
+    const getResponseJson = await getResponse.json();
+    
+    /** @type {Array<{ rank: string; count_low: number; }>} 昇進資格一覧 */
+    const rankTitles = getResponseJson.rankTitles;
+    tbody.innerHTML = rankTitles.map((rankTitle, index) => {
+      const nextRankTitle = rankTitles[index + 1];
+      const displayCount = nextRankTitle
+        ? `${rankTitle.count_low}～${nextRankTitle.count_low - 1}回`
+        : `${rankTitle.count_low}回以上`;
+      return `
+        <tr>
+          <td class="column-rank" >${rankTitle.rank}</td>
+          <td class="column-count">${displayCount}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  catch(error) {
+    console.error('Get Rank Titles : Failed', error);
+    tbody.innerHTML = '<tr><th colspan="2" class="announce">エラーが発生しました</th></tr>';
+  }
+};
+
+
+// Controllers
+// ==============================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await onFirstView();
+  
+  document.getElementById('button-back').addEventListener('click', () => location.href = '/');
+});
+
+    </script>
+  </head>
+  <body>
+
+<header>
+  <div class="back-button-container">
+    <button type="button" id="button-back">戻る</button>
+  </div>
+  <h2>昇進資格</h2>
+  <p>以下の投稿回数に従って、あなたは昇進していきます!!</p>
+</header>
+
+<main>
+  <table class="rank-titles-table">
+    <tbody id="rank-titles-tbody">
+      <tr>
+        <th colspan="2" class="announce">Loading...</th>
+      </tr>
+    </tbody>
+  </table>
+</main>
+
+  </body>
+</html>

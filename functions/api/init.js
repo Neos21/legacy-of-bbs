@@ -9,11 +9,11 @@ export async function onRequestGet(context) {
   
   await db.prepare('CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT)').run();
   const postsTotal = await db.prepare('SELECT COUNT(*) AS total FROM posts').first('total');
-  if(postsTotal === 0) await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (\'Name 1\', \'2022-12-30 00:01:02\', \'Comment 1\nTest\', 1, \'初心者\')').run();
+  if(postsTotal === 0) await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (\'Neo\', \'2023-01-01 01:02:03\', \'Comment\nTest\', 1, \'初心者\')').run();
   
   await db.prepare('CREATE TABLE IF NOT EXISTS ranks (name TEXT, count INTEGER, rank TEXT)').run();
   const ranksTotal = await db.prepare('SELECT COUNT(*) AS total FROM ranks').first('total');
-  if(ranksTotal === 0) await db.prepare('INSERT INTO ranks (name, count, rank) VALUES (\'Name 1\', 1, \'初心者\')').run();
+  if(ranksTotal === 0) await db.prepare('INSERT INTO ranks (name, count, rank) VALUES (\'Neo\', 1, \'初心者\')').run();
   
   await db.prepare('CREATE TABLE IF NOT EXISTS rank_titles (rank TEXT, count_low INTEGER)').run();
   const rankTitlesTotal = await db.prepare('SELECT COUNT(*) AS total FROM rank_titles').first('total');

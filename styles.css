@@ -167,12 +167,12 @@ textarea {
  * ============================== */
 
 .posts-table thead th              { color: #000; }
-.posts-table thead .column-id      { width: 3.5em; }
-.posts-table thead .column-date    { width: 7em; }
-.posts-table thead .column-name    { width: 8em; min-width: 6em; }
-.posts-table thead .column-comment { min-width: 12em; }
-.posts-table thead .column-count   { width: 5em; }
-.posts-table thead .column-rank    { width: 8em; }
+.posts-table thead .column-id      { width: 3.5rem; }
+.posts-table thead .column-date    { width: 7rem; min-width: 5.5rem; }
+.posts-table thead .column-name    { width: 8rem; min-width: 6rem; }
+.posts-table thead .column-comment { min-width: 18rem; }
+.posts-table thead .column-count   { width: 5rem; }
+.posts-table thead .column-rank    { width: 8rem; }
 
 .posts-table tbody .column-id      { text-align: right;  white-space: nowrap; }
 .posts-table tbody .column-date    { text-align: center; white-space: nowrap; }
@@ -180,6 +180,15 @@ textarea {
 .posts-table tbody .column-comment { white-space: pre-wrap; word-break: break-all; }
 .posts-table tbody .column-count   { text-align: right; white-space: nowrap; }
 .posts-table tbody .column-rank    { text-align: center; }
+
+@media (max-width: 600px) {
+  .posts-table tbody .column-id,
+  .posts-table tbody .column-date .ymd,
+  .posts-table tbody .column-count,
+  .posts-table tbody .column-rank {
+    font-size: .8rem;
+  }
+}
 
 
 /* Main Page : Footer

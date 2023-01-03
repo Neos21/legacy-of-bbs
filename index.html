@@ -30,11 +30,11 @@ const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
 const convertDate = (dateString) => {
   if(dateString == null || String(dateString).toString() === '') return '[ERROR]';
   const jstDate = new Date(new Date(dateString).getTime() + timezoneOffset);
-  return               jstDate.getFullYear()
-    + '-'    + ('0' + (jstDate.getMonth() + 1)).slice(-2)
-    + '-'    + ('0' +  jstDate.getDate()      ).slice(-2)
-    + '<br>' + ('0' +  jstDate.getHours()     ).slice(-2)
-    + ':'    + ('0' +  jstDate.getMinutes()   ).slice(-2);
+  return '<span class="ymd">' + jstDate.getFullYear()
+    + '-'             + ('0' + (jstDate.getMonth() + 1)).slice(-2)
+    + '-'             + ('0' +  jstDate.getDate()      ).slice(-2)
+    + '</span><br>'   + ('0' +  jstDate.getHours()     ).slice(-2)
+    + ':'             + ('0' +  jstDate.getMinutes()   ).slice(-2);
 };
 
 /**

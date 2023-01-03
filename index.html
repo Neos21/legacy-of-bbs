@@ -14,12 +14,6 @@
 /** @type {number} 表示中のページ番号 */
 let currentPage = 1;
 
-/** @type {number} 1ページ分として表示する投稿の件数・API レスポンス上は最大でこの件数 `+1` の投稿が返る (Next ボタンの表示制御のため) */
-const postsPerPage = 100;
-
-/** @type {number} デフォルトのページ番号 */
-const defaultPage = 1;
-
 /** @type {number} タイムゾーンのオフセット値 */
 const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
 
@@ -28,25 +22,12 @@ const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
 // ==============================
 
 /**
- * ページ番号を特定する・数値変換出来なかった場合は `null` とする
- * 
- * @param {string | null | undefined} paramPage ページ番号のパラメータ
- * @return {number | null} ページ番号、数値変換できなければ `null`
- */
-const detectPage = (paramPage) => {
-  if(paramPage == null || String(paramPage).trim() ==='') return null;
-  const numParamPage = Number(paramPage);
-  if(Number.isNaN(numParamPage)) return null;
-  return Math.trunc(numParamPage);
-};
-
-/**
  * 日時文字列を JST に直し整形する
  * 
  * @param {string} dateString SQLite が管理する `YYYY-MM-DD HH:mm` 形式の文字列・UTC 想定
  * @return {string} `YYYY-MM-DD HH:mm` 形式の文字列・確実に JST に変換した値
  */
-const convertToJst = (dateString) => {
+const convertDate = (dateString) => {
   if(dateString == null || String(dateString).toString() === '') return '[ERROR]';
   const jstDate = new Date(new Date(dateString).getTime() + timezoneOffset);
   return               jstDate.getFullYear()
@@ -83,41 +64,36 @@ const convertToTrimmedString = (value) => (value == null) ? '' : String(value).t
 /**
  * API から投稿を取得する
  * 
- * @param {number} paramPage 取得するページ番号・クエリ文字列の場合は `detectPage()` で正常値に変換済のモノを使用する
- * return { posts: Array<{ id: number; date: string; comment: string; count: number; rank: string; }>; page: number; } 投稿一覧と正しいページ番号
+ * @param {number | string | null | undefined} paramPage 取得するページ番号
+ * return {{ page: number;  posts: Array<{ id: number; date: string; comment: string; count: number; rank: string; }>; hasBack: boolean; hasNext: boolean; }} 投稿一覧と正しいページ番号
  */
 const fetchPosts = async (paramPage) => {
   const getPostsUrl = new URL('/api/posts', location.origin);
   if(paramPage != null) getPostsUrl.search = new URLSearchParams({ page: paramPage });
-  
   const getResponse = await fetch(getPostsUrl.toString());
   const getResponseJson = await getResponse.json();
-  const posts = getResponseJson.posts;
-  const page  = getResponseJson.page;
-  return { posts, page};
+  return getResponseJson;
 };
 
 /**
  * 投稿を出力する
  * 
- * @param {Array<{ id: number; date: string; comment: string; count: number; rank: string; }>} posts 投稿一覧
- * @param {number} page 正しいページ番号
+ * @param {number | string | null | undefined} paramPage 取得するページ番号
+ * @param {boolean} isPushState `replaceState` ではなく `pushState` を実行する場合は `true`
  */
-const showPosts = (posts, page, isPushState = false) => {
-  // 表示件数より1件多くレスポンスされた場合
-  const hasNext = posts.length >= postsPerPage + 1;
+const showPosts = async (paramPage, isPushState = false) => {
+  const { page, posts, hasBack, hasNext } = await fetchPosts(paramPage);
   
   // テーブルを出力する
   const tbody = document.getElementById('posts-tbody');
   if(posts.length === 0) {
     tbody.innerHTML = '<tr><td class="announce" colspan="6">投稿はありません</td></tr>';
   } else {
-    if(hasNext) posts.pop();  // 表示件数より1件多かった場合は末尾の1件を削除する
     tbody.innerHTML = posts.map((post) => {
       if(post.name === 'Announce Bot') return `<tr><td class="column-id">${post.id}</td><td class="announce" colspan="5">${convertComment(sanitize(post.comment))}</td></tr>`;
       return `<tr>
         <td class="column-id"     >${post.id}</td>
-        <td class="column-date"   >${convertToJst(post.date)}</td>
+        <td class="column-date"   >${convertDate(post.date)}</td>
         <td class="column-name"   >${sanitize(post.name)}</td>
         <td class="column-comment">${convertComment(sanitize(post.comment))}</td>
         <td class="column-count"  >${post.count}回</td>
@@ -128,33 +104,27 @@ const showPosts = (posts, page, isPushState = false) => {
   
   // Push or Replace URL
   const validUrl = new URL(location.href);
-  validUrl.search = new URLSearchParams(page === defaultPage ? {} : { page });
+  validUrl.search = new URLSearchParams(hasBack ? { page } : {});
   history[isPushState ? 'pushState' : 'replaceState']({ page }, null, validUrl.toString());
   // Current Page
   currentPage = page;
   
-  // Back ボタン
-  const hasBack = page > defaultPage;
+  // Back・Next ボタン
   document.getElementById('nav-back-button').style.display = hasBack ? 'inline' : 'none';
-  // Next ボタン
   document.getElementById('nav-next-button').style.display = hasNext ? 'inline' : 'none';
 };
 
 /** 初期表示時の処理 */
 const onFirstView = async () => {
   try {
-    // Detect Param Page
-    const rawParamPage = new URL(location.href).searchParams.get('page');
-    const paramPage = detectPage(rawParamPage);
+    const savedInputName = localStorage.getItem('input-name');
+    if(savedInputName != null && savedInputName !== '') document.getElementById('input-name').value = savedInputName;
     
-    // Fetch And Show
-    const { posts, page } = await fetchPosts(paramPage);
-    showPosts(posts, page);
-    
-    console.log('Get Posts', { rawParamPage, paramPage, page, posts });
+    const paramPage = new URL(location.href).searchParams.get('page');
+    await showPosts(paramPage);
   }
   catch(error) {
-    console.error('Get Posts : Failed', error);
+    console.error('On First View : Failed', error);
     document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="announce">エラーが発生しました</th></tr>';
   }
 };
@@ -178,19 +148,16 @@ const onPost = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, comment })
     });
-    const postResponseJson = await postResponse.json();
     if(!postResponse.ok) {
-      console.error('Post : Failed : Error Response',  { name, comment, postResponseJson });
+      console.error('Post : Failed : Error Response',  { name, comment, responseJson: await postResponse.json() });
       throw new Error('Error Response');
     }
     
-    console.log('Post', { name, comment, postResponseJson });
     document.getElementById('input-comment').value = '';  // Reset
-    document.getElementById('posts-tbody').innerHTML = '<tr><th colspan="6" class="announce">投稿完了・再読込中…</th></tr>';
+    localStorage.setItem('input-name', name);
     
     // Re-Show Latest Posts
-    const { posts, page } = await fetchPosts(defaultPage);
-    showPosts(posts, page, true);
+    await showPosts(null, true);
   }
   catch(error) {
     console.error('Post : Failed', error);
@@ -225,21 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   
   // Footer
-  document.getElementById('nav-back-button').addEventListener('click', async () => {
-    const { posts, page } = await fetchPosts(currentPage - 1);
-    showPosts(posts, page, true);
-  });
-  document.getElementById('nav-next-button').addEventListener('click', async () => {
-    const { posts, page } = await fetchPosts(currentPage + 1);
-    showPosts(posts, page, true);
-  });
+  document.getElementById('nav-back-button').addEventListener('click', async () => await showPosts(currentPage - 1, true));
+  document.getElementById('nav-next-button').addEventListener('click', async () => await showPosts(currentPage + 1, true));
   
   // Pop State
-  window.addEventListener('popstate', async (event) => {
-    const targetPage = event?.state?.page ?? defaultPage;
-    const { posts, page } = await fetchPosts(targetPage);
-    showPosts(posts, page);
-  });
+  window.addEventListener('popstate', async (event) => await showPosts(event.state?.page));
 });
 
     </script>
@@ -285,11 +242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <th class="column-rank"   >昇進状態</th>
       </tr>
     </thead>
-    <tbody id="posts-tbody">
-      <tr>
-        <th colspan="6" class="announce">Loading...</th>
-      </tr>
-    </tbody>
+    <tbody id="posts-tbody"></tbody>
   </table>
 </main>
 

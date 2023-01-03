@@ -1,10 +1,10 @@
 // Global Variables
 // ==============================
 
-/** @type {number} 1ページ分として取得・レスポンスする投稿の件数・`OFFSET` 値はこの値の `-1` を利用しており、JS 側はこの値の `-1` 分を表示する */
-const postsPerPage = 100 + 1;
+/** @type {number} 1ページ分として取得・レスポンスする投稿の件数 */
+const postsPerPage = 100;
 
-/** @type {number} デフォルトのページ番号・JS 側にも同値の定義あり */
+/** @type {number} デフォルトのページ番号 */
 const defaultPage = 1;
 
 /** @type {number} 名前の最長文字数・HTML 側にも `#input-name` の `maxlength` 属性で同値を指定 */
@@ -34,14 +34,6 @@ const detectPage = (paramPage) => {
   if(numPage < defaultPage) return defaultPage;
   return numPage;
 };
-
-/**
- * ページ番号からオフセット値に変換する
- * 
- * @param {number} page ページ番号 (`1` 始まり)
- * @return {number} SQLite 用の `OFFSET` 値 (`0` 始まり)
- */
-const pageToOffset = (page) => ((page - 1) < 0 ? 0 : page - 1) * (postsPerPage - 1);
 
 /**
  * 値を確実に文字列に変換する
@@ -106,16 +98,20 @@ export async function onRequestGet(context) {
   
   // Service : ページ番号のクエリ文字列からオフセット値を特定する・未指定や不正値はデフォルト値に変換する
   const page = detectPage(paramPage);
-  const offset = pageToOffset(page);
+  const offset = (page - 1) * postsPerPage;
   // Service : DB : 取得
   const db = context.env.DB;
-  const result = await db.prepare('SELECT * FROM posts ORDER BY id DESC LIMIT ?1 OFFSET ?2').bind(postsPerPage, offset).all();
+  const sqlResult = await db.prepare('SELECT * FROM posts ORDER BY id DESC LIMIT ?1 OFFSET ?2').bind(postsPerPage + 1, offset).all();
   // Service : Return Object
-  const posts = { page, posts: result.results, postsPerPage };
+  const posts = sqlResult.results;
+  const hasBack = offset > 0;  // 前ページがあるか否かは OFFSET 値で判定する
+  const hasNext = posts.length === postsPerPage + 1;  // 次ページがあるか否かは LIMIT 値どおりの件数が取得できたか否かで判定する
+  if(hasNext) posts.pop();  // 次ページ分のデータを取得していたら削っておく
+  const result = { page, posts, hasBack, hasNext };
   
   // Controller : Response
-  console.log('Get Posts : ', { paramPage, page, offset, posts: posts.posts.length });
-  return new Response(JSON.stringify(posts));
+  console.log('Get Posts : ', { paramPage, offset, ...result });
+  return new Response(JSON.stringify(result));
 }
 
 /**
@@ -132,6 +128,7 @@ export async function onRequestPost(context) {
   const name    = convertToTrimmedString(body.name);
   const comment = convertToTrimmedString(body.comment);
   const validateResult = validate({ name, comment });
+  // Controller : Bad Response
   if(validateResult) return new Response(JSON.stringify({ error: 'Invalid Request' }), { status: 400 });
   
   // Service : DB

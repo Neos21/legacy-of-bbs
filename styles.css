@@ -168,9 +168,9 @@ textarea {
 
 .posts-table thead th              { color: #000; }
 .posts-table thead .column-id      { width: 3.5rem; }
-.posts-table thead .column-date    { width: 7rem; min-width: 5.5rem; }
-.posts-table thead .column-name    { width: 8rem; min-width: 6rem; }
-.posts-table thead .column-comment { min-width: 18rem; }
+.posts-table thead .column-date    { width: 9rem; min-width: 4rem; }
+.posts-table thead .column-name    { width: 8rem; min-width: 5rem; }
+.posts-table thead .column-comment { min-width: 20rem; }
 .posts-table thead .column-count   { width: 5rem; }
 .posts-table thead .column-rank    { width: 8rem; }
 
@@ -183,11 +183,13 @@ textarea {
 
 @media (max-width: 600px) {
   .posts-table tbody .column-id,
-  .posts-table tbody .column-date .ymd,
+  .posts-table tbody .column-date,
   .posts-table tbody .column-count,
   .posts-table tbody .column-rank {
-    font-size: .8rem;
+    font-size: .85rem;
   }
+  .date-year, .date-md, .date-hm { display: block; }
+  .date-space { display: none; }
 }
 
 
@@ -201,7 +203,14 @@ footer {
 
 #nav-back-button, #nav-next-button { display: none; }
 
-.footer-link { font-size: .8rem; text-align: right; }
+.footer-link {
+  border-top: 1px solid #0000cd;
+  padding-top: 2em;
+  color: #1e90ff;
+  font-size: .9rem;
+  text-align: right;
+}
+.footer-link a { color: inherit; }
 
 
 /* Ranks Page

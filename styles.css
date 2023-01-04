@@ -201,6 +201,8 @@ footer {
 
 #nav-back-button, #nav-next-button { display: none; }
 
+.footer-link { font-size: .8rem; text-align: right; }
+
 
 /* Ranks Page
  * ============================== */

@@ -73,6 +73,9 @@ $ wrangler pages dev . --local --persist
 ## Publish
 
 ```bash
+# Set Secret : https://developers.cloudflare.com/workers/platform/environment-variables/
+$ wrangler secret put CREDENTIAL
+
 $ wrangler pages publish ./ --project-name legacy-of-bbs
 ✨ Successfully created the 'legacy-of-bbs' project.
 ```

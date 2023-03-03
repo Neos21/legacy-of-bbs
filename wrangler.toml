@@ -6,3 +6,7 @@ compatibility_date = "2022-12-31"
 binding = "DB"
 database_name = "legacy-of-bbs"
 database_id = "eebf425b-5865-429f-960a-9ab1ea6a0c32"
+
+# シークレット : 本番の環境変数は `$ wrangler secret put CREDENTIAL` コマンドで入力する
+[vars]
+CREDENTIAL = "test"

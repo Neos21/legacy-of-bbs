@@ -7,9 +7,9 @@
 export async function onRequestGet(context) {
   const db = context.env.DB;
   
-  await db.prepare('CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT)').run();
+  await db.prepare('CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT, host TEXT)').run();
   const postsTotal = await db.prepare('SELECT COUNT(*) AS total FROM posts').first('total');
-  if(postsTotal === 0) await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (\'Neo\', \'2023-01-01 01:02:03\', \'Comment\nTest\', 1, \'初心者\')').run();
+  if(postsTotal === 0) await db.prepare('INSERT INTO posts (name, date, comment, count, rank, host) VALUES (\'Neo\', \'2023-01-01 01:02:03\', \'Comment\nTest\', 1, \'初心者\', \'0.0.0.0\')').run();
   
   await db.prepare('CREATE TABLE IF NOT EXISTS ranks (name TEXT, count INTEGER, rank TEXT)').run();
   const ranksTotal = await db.prepare('SELECT COUNT(*) AS total FROM ranks').first('total');

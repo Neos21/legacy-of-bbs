@@ -17,6 +17,9 @@ let currentPage = 1;
 /** @type {number} タイムゾーンのオフセット値 */
 const timezoneOffset = (new Date().getTimezoneOffset() + 540) * 60000;
 
+/** @type {Array<string>} NG ネーム */
+const ngNames = ['Neo', 'Neos21', '管理人'];
+
 
 // Service Functions
 // ==============================
@@ -140,12 +143,19 @@ const onPost = async () => {
     const comment = convertToTrimmedString(document.getElementById('input-comment').value);
     if(name === '' || comment === '') throw new Error('Invalid Input');
     
+    // Credential
+    let credential = '';
+    if(ngNames.some(ngName => ngName === name)) {
+      credential = window.prompt('Please Input Credential', '');
+      if(credential.trim() === '') throw new Error('Invalid Credential');
+    }
+    
     // Post
     const postUrl = new URL('/api/posts', location.origin).toString();
     const postResponse = await fetch(postUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, comment })
+      body: JSON.stringify({ name, comment, credential })
     });
     if(!postResponse.ok) {
       console.error('Post : Failed : Error Response',  { name, comment, responseJson: await postResponse.json() });

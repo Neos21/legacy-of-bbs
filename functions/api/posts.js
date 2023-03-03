@@ -16,6 +16,9 @@ const announceBotName = 'Announce Bot';
 /** @type {number} コメントの最長文字数・HTML 側にも `#input-comment` の `maxlength` 属性で同値を指定 */
 const maxLengthComment = 1000;
 
+/** @type {Array<string>} NG ネーム */
+const ngNames = ['Neo', 'Neos21', '管理人'];
+
 
 // Service Functions
 // ==============================
@@ -55,15 +58,20 @@ const validateIsWithinRangeString = (value, maxLength) => value !== '' && value.
 /**
  * 入力チェックする
  * 
- * @param {{ name: string; comment: string; }} body リクエストボディ
+ * @param {string} name 名前
+ * @param {string} comment コメント
+ * @param {string} credential 入力クレデンシャル
+ * @param {string} envCredential 環境変数クレデンシャル
  * @return {string | null} 異常があればメッセージを返す・正常なら `null` を返す
  */
-const validate = (body) => {
+const validate = (name, comment, credential, envCredential) => {
   // Name
-  if(!validateIsWithinRangeString(body.name, maxLengthName)) return `名前は ${maxLengthName} 文字以内で入力してください`;
-  if(body.name === announceBotName) return '使用できない名前です';
+  if(!validateIsWithinRangeString(name, maxLengthName)) return `名前は ${maxLengthName} 文字以内で入力してください`;
+  if(name === announceBotName) return '使用できない名前です';
+  // Credential
+  if(ngNames.some(ngName => ngName === name) && credential !== envCredential) return 'クレデンシャルが間違っています';
   // Comment
-  if(!validateIsWithinRangeString(body.comment, maxLengthComment)) return `コメントは ${maxLengthComment} 文字以内で入力してください`;
+  if(!validateIsWithinRangeString(comment, maxLengthComment)) return `コメントは ${maxLengthComment} 文字以内で入力してください`;
   
   return null;
 };
@@ -80,6 +88,26 @@ const getNowDateString = () => {
     + '-' + ('0' +  date.getDate()      ).slice(-2)
     + ' ' + ('0' +  date.getHours()     ).slice(-2)
     + ':' + ('0' +  date.getMinutes()   ).slice(-2);
+};
+
+/**
+ * クライアント IP を取得する
+ * 
+ * @param {Request} request リクエスト
+ * @return {string} クライアント IP
+ */
+const getClientIp = (request) => {
+  const clientIp = [
+    request?.headers?.['x-forwarded-for'],
+    request?.headers?.get('x-forwarded-for'),
+    request?.headers?.['x-real-ip'],
+    request?.headers?.get('x-real-ip'),
+    request?.connection?.remoteAddress,
+    request?.connection?.socket?.remoteAddress,
+    request?.socket?.remoteAddress,
+    '0.0.0.0'
+  ].find(ip => ip != null);
+  return clientIp;
 };
 
 
@@ -110,7 +138,7 @@ export async function onRequestGet(context) {
   const result = { page, posts, hasBack, hasNext };
   
   // Controller : Response
-  console.log('Get Posts : ', { paramPage, offset, ...result });
+  console.log('Get Posts : ', { paramPage, offset, page: result.page, postsLength: result.posts.length, hasBack: result.hasBack, hasNext: result.hasNext });
   return new Response(JSON.stringify(result));
 }
 
@@ -125,11 +153,16 @@ export async function onRequestPost(context) {
   const body = await context.request.json();  // https://developers.cloudflare.com/workers/examples/read-post/
   
   // Service : Validate
-  const name    = convertToTrimmedString(body.name);
-  const comment = convertToTrimmedString(body.comment);
-  const validateResult = validate({ name, comment });
+  const name          = convertToTrimmedString(body.name);
+  const comment       = convertToTrimmedString(body.comment);
+  const credential    = convertToTrimmedString(body.credential);
+  const envCredential = context.env.CREDENTIAL;
+  const validateResult = validate(name, comment, credential, envCredential);
   // Controller : Bad Response
   if(validateResult) return new Response(JSON.stringify({ error: 'Invalid Request' }), { status: 400 });
+  
+  // Client IP
+  const clientIp = getClientIp(context.request);
   
   // Service : DB
   const db = context.env.DB;
@@ -140,11 +173,11 @@ export async function onRequestPost(context) {
     const rankTitle = await db.prepare('SELECT rank, count_low FROM rank_titles ORDER BY count_low ASC LIMIT 1').first();
     // 投稿する
     const nowDate = getNowDateString();
-    await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (?1, ?2, ?3, ?4, ?5)').bind(name, nowDate, comment, 1, rankTitle.rank).run();
+    await db.prepare('INSERT INTO posts (name, date, comment, count, rank, host) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind(name, nowDate, comment, 1, rankTitle.rank, clientIp).run();
     // ランキングを追加する
     await db.prepare('INSERT INTO ranks (name, count, rank) VALUES (?1, ?2, ?3)').bind(name, 1, rankTitle.rank).run();
     // Announce Bot を投稿する
-    await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (?1, ?2, ?3, ?4, ?5)').bind('Announce Bot', nowDate, `${name} さん！初めまして！`, 0, 'Announce Bot').run();
+    await db.prepare('INSERT INTO posts (name, date, comment, count, rank, host) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind('Announce Bot', nowDate, `${name} さん！初めまして！`, 0, 'Announce Bot', '0.0.0.0').run();
   }
   else {  // 2回目以降の投稿の場合
     const count = rank.count + 1;
@@ -158,11 +191,11 @@ export async function onRequestPost(context) {
     });
     // 投稿する
     const nowDate = getNowDateString();
-    await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (?1, ?2, ?3, ?4, ?5)').bind(name, nowDate, comment, count, rankTitle.rank).run();
+    await db.prepare('INSERT INTO posts (name, date, comment, count, rank, host) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind(name, nowDate, comment, count, rankTitle.rank, clientIp).run();
     // ランキングを更新する
     await db.prepare('UPDATE ranks SET count = ?1, rank = $2 WHERE name = ?3').bind(count, rankTitle.rank, name).run();
     // 昇進資格が変わったタイミングなら Announce Bot を投稿する
-    if(count === rankTitle.count_low) await db.prepare('INSERT INTO posts (name, date, comment, count, rank) VALUES (?1, ?2, ?3, ?4, ?5)').bind('Announce Bot', nowDate, `${name} さん！投稿回数が${count}回に達成し昇進しました！`, 0, 'Announce Bot').run();
+    if(count === rankTitle.count_low) await db.prepare('INSERT INTO posts (name, date, comment, count, rank, host) VALUES (?1, ?2, ?3, ?4, ?5, ?6)').bind('Announce Bot', nowDate, `${name} さん！投稿回数が${count}回に達成し昇進しました！`, 0, 'Announce Bot', '0.0.0.0').run();
   }
   
   // Controller : Response

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>懐かし掲示板 BBS - 管理者ページ</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+
+.admin-find-controls {
+  text-align: center;
+  border-bottom: 1px solid #0000cd;
+  padding-bottom: 1em;
+}
+.admin-find-controls input, .admin-find-controls button {
+  margin-top: .25rem;
+  width: 8em;
+}
+
+#info-message {
+  color: #0000cd;
+  font-weight: bold;
+}
+#error-message {
+  color: #f00;
+  font-weight: bold;
+}
+
+.admin-post dt {
+  margin-top   : .75rem;
+  margin-bottom: .25rem;
+  font-weight: bold;
+}
+.admin-post dd {
+  margin-left: 2rem;
+}
+.admin-post input, .admin-post textarea {
+  width: 100%;
+}
+
+.admin-edit-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.admin-edit-controls > div:last-child {
+  text-align: right;
+}
+
+    </style>
+    <script>
+
+// Service Functions
+// ==============================
+
+/** Reset Post */
+const resetPost = () => {
+  document.getElementById('target-id'     ).value = '';
+  document.getElementById('target-date'   ).value = '';
+  document.getElementById('target-name'   ).value = '';
+  document.getElementById('target-comment').value = '';
+  document.getElementById('target-count'  ).value = '';
+  document.getElementById('target-rank'   ).value = '';
+  document.getElementById('target-host'   ).value = '';
+};
+
+
+// Controllers
+// ==============================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // First View
+  resetPost();
+  document.getElementById('credential'   ).value     = '';
+  document.getElementById('post-id'      ).value     = '';
+  document.getElementById('info-message' ).innerText = '';
+  document.getElementById('error-message').innerText = '';
+  
+  document.getElementById('button-back').addEventListener('click', () => location.href = '/');
+  
+  // Find Post
+  document.getElementById('find-post').addEventListener('click', async () => {
+    try {
+      document.getElementById('info-message' ).innerText = '';
+      document.getElementById('error-message').innerText = '';
+      resetPost();
+      
+      // Input Values
+      const credential = document.getElementById('credential').value;
+      const id         = document.getElementById('post-id'   ).value;
+      
+      // Call API
+      const adminFindPostUrl = new URL('/api/admin-find-post', location.origin);
+      const postResponse = await fetch(adminFindPostUrl.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, id })
+      });
+      if(!postResponse.ok) {
+        const postResponseText = await postResponse.text();
+        console.error('Find Post : Failed : Error Response', { postResponse, postResponseText });
+        throw new Error(postResponseText);
+      }
+      // Succeeded
+      const postResponseJson = await postResponse.json();
+      console.log('Find Post', postResponseJson);
+      
+      // Set Values
+      document.getElementById('target-id'     ).value = postResponseJson.id;
+      document.getElementById('target-date'   ).value = postResponseJson.date;
+      document.getElementById('target-name'   ).value = postResponseJson.name;
+      document.getElementById('target-comment').value = postResponseJson.comment;
+      document.getElementById('target-count'  ).value = postResponseJson.count;
+      document.getElementById('target-rank'   ).value = postResponseJson.rank;
+      document.getElementById('target-host'   ).value = postResponseJson.host;
+    }
+    catch(error) {
+      console.error('Find Post : Failed', error);
+      document.getElementById('error-message').innerText = `Failed To Find : ${error}`;
+    }
+  });
+  
+  // Edit Post
+  document.getElementById('edit-post').addEventListener('click', async () => {
+    try {
+      document.getElementById('info-message' ).innerText = '';
+      document.getElementById('error-message').innerText = '';
+      
+      // Input Values
+      const credential = document.getElementById('credential'    ).value;
+      const id         = document.getElementById('target-id'     ).value;
+      const date       = document.getElementById('target-date'   ).value
+      const name       = document.getElementById('target-name'   ).value
+      const comment    = document.getElementById('target-comment').value
+      const count      = document.getElementById('target-count'  ).value
+      const rank       = document.getElementById('target-rank'   ).value
+      const host       = document.getElementById('target-host'   ).value
+      
+      // Call API
+      const adminEditPostUrl = new URL('/api/admin-edit-post', location.origin);
+      const postResponse = await fetch(adminEditPostUrl.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, id, date, name, comment, count, rank, host })
+      });
+      if(!postResponse.ok) {
+        const postResponseText = await postResponse.text();
+        console.error('Edit Post : Failed : Error Response', { postResponse, postResponseText });
+        throw new Error(postResponseText);
+      }
+      // Succeeded
+      const postResponseJson = await postResponse.json();
+      console.log('Edit Post', postResponseJson);
+      document.getElementById('info-message').innerText = `ID [${id}] を更新しました。`;
+    }
+    catch(error) {
+      console.error('Edit Post : Failed', error);
+      document.getElementById('error-message').innerText = `Failed To Edit : ${error}`;
+    }
+  });
+  
+  // Remove Post
+  document.getElementById('remove-post').addEventListener('click', async () => {
+    try {
+      document.getElementById('info-message' ).innerText = '';
+      document.getElementById('error-message').innerText = '';
+      
+      // Input Values
+      const credential = document.getElementById('credential').value;
+      const id         = document.getElementById('target-id' ).value;
+      
+      // Call API
+      const adminRemovePostUrl = new URL('/api/admin-remove-post', location.origin);
+      const postResponse = await fetch(adminRemovePostUrl.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential, id })
+      });
+      if(!postResponse.ok) {
+        const postResponseText = await postResponse.text();
+        console.error('Remove Post : Failed : Error Response', { postResponse, postResponseText });
+        throw new Error(postResponseText);
+      }
+      // Succeeded
+      const postResponseJson = await postResponse.json();
+      console.log('Remove Post', postResponseJson);
+      document.getElementById('info-message').innerText = `ID [${id}] を削除しました。`;
+      
+      // Reset
+      resetPost();
+      document.getElementById('post-id').value = '';
+    }
+    catch(error) {
+      console.error('Remove Post : Failed', error);
+      document.getElementById('error-message').innerText = `Failed To Remove : ${error}`;
+    }
+  });
+});
+
+    </script>
+  </head>
+  <body>
+
+<header>
+  <div class="back-button-container">
+    <button type="button" id="button-back">戻る</button>
+  </div>
+  <h2>管理者ページ</h2>
+</header>
+
+<p class="admin-find-controls">
+  <input type="password" id="credential" placeholder="Credential" value="">
+  <input type="text"     id="post-id"    placeholder="Post ID"    value="">
+  <button type="button"  id="find-post">Find Post</button>
+</p>
+
+<div id="info-message"></div>
+<div id="error-message"></div>
+
+<dl class="admin-post">
+  <dt>ID (No)</dt>
+  <dd><input type="text" id="target-id"    value="" placeholder="ID" readonly></dd>
+  <dt>Date</dt>
+  <dd><input type="text" id="target-date"  value="" placeholder="Date"></dd>
+  <dt>Name</dt>
+  <dd><input type="text" id="target-name"  value="" placeholder="Name"></dd>
+  <dt>Comment (Message)</dt>
+  <dd><textarea          id="target-comment"        placeholder="Comment"></textarea></dd>
+  <dt>Count</dt>
+  <dd><input type="text" id="target-count" value="" placeholder="Count"></dd>
+  <dt>Rank</dt>
+  <dd><input type="text" id="target-rank"  value="" placeholder="Rank"></dd>
+  <dt>Host</dt>
+  <dd><input type="text" id="target-host"  value="" placeholder="Host"></dd>
+</dl>
+<div class="admin-edit-controls">
+  <div><button type="button" id="edit-post">Edit Post</button></div>
+  <div><button type="button" id="remove-post">Remove Post</button></div>
+</div>
+
+  </body>
+</html>

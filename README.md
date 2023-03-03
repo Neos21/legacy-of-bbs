@@ -38,10 +38,10 @@ EOL
 ```bash
 # Production DB
 $ wrangler d1 execute legacy-of-bbs --command='DROP TABLE IF EXISTS posts'
-$ wrangler d1 execute legacy-of-bbs --command='CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT)'
+$ wrangler d1 execute legacy-of-bbs --command='CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT, host TEXT)'
 # Insert Dummy Posts
-$ wrangler d1 execute legacy-of-bbs --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('Name 1', '2022-12-30 00:01:02', 'Comment 1\nTest', 1, '初心者')"
-$ wrangler d1 execute legacy-of-bbs --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('名前 2', '2022-12-31 01:02:03', 'コメント 2 Test', 1, '初心者')"
+$ wrangler d1 execute legacy-of-bbs --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('Name 1', '2022-12-30 00:01:02', 'Comment 1\nTest', 1, '初心者', '0.0.0.0')"
+$ wrangler d1 execute legacy-of-bbs --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('名前 2', '2022-12-31 01:02:03', 'コメント 2 Test', 1, '初心者', '0.0.0.0')"
 # Get Two Posts
 $ wrangler d1 execute legacy-of-bbs --command='SELECT * FROM posts ORDER BY id DESC'
 # Get Second (Latest) Post
@@ -51,13 +51,26 @@ $ wrangler d1 execute legacy-of-bbs --command='SELECT * FROM posts ORDER BY id D
 
 # Local DB : `./.wrangler/state/d1/DB.sqlite3`
 $ wrangler d1 execute legacy-of-bbs --local --command='DROP TABLE IF EXISTS posts'
-$ wrangler d1 execute legacy-of-bbs --local --command='CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT)'
-$ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('Name 1', '2022-12-30 00:01:02', 'Comment 1\nTest', 1, '初心者')"
-$ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('名前 2', '2022-12-31 01:02:03', 'コメント 2 Test', 1, '初心者')"
+$ wrangler d1 execute legacy-of-bbs --local --command='CREATE TABLE IF NOT EXISTS posts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, date TEXT, comment TEXT, count INTEGER, rank TEXT, host TEXT)'
+$ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('Name 1', '2022-12-30 00:01:02', 'Comment 1\nTest', 1, '初心者', '0.0.0.0')"
+$ wrangler d1 execute legacy-of-bbs --local --command="INSERT INTO posts (name, date, comment, count, rank) VALUES ('名前 2', '2022-12-31 01:02:03', 'コメント 2 Test', 1, '初心者', '0.0.0.0')"
 $ wrangler d1 execute legacy-of-bbs --local --command='SELECT * FROM posts ORDER BY id DESC'
 # Delete
 $ wrangler d1 execute legacy-of-bbs --local --command='DELETE FROM posts'
 $ wrangler d1 execute legacy-of-bbs --local --command='DELETE FROM ranks'
+```
+
+### Setup Secret
+
+```bash
+$ cat ./wrangler.toml
+[vars]
+CREDENTIAL = "test"
+
+# https://developers.cloudflare.com/workers/platform/environment-variables/
+$ wrangler secret put CREDENTIAL
+
+# Setup Environment Variable In Web Console
 ```
 
 
@@ -73,9 +86,6 @@ $ wrangler pages dev . --local --persist
 ## Publish
 
 ```bash
-# Set Secret : https://developers.cloudflare.com/workers/platform/environment-variables/
-$ wrangler secret put CREDENTIAL
-
 $ wrangler pages publish ./ --project-name legacy-of-bbs
 ✨ Successfully created the 'legacy-of-bbs' project.
 ```

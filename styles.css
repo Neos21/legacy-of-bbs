@@ -140,7 +140,7 @@ form {
   white-space: nowrap;
   background: #ffd700;
 }
-input[type="text"], textarea {
+input[type="text"], input[type="password"], textarea {
   border: 1px solid #767676;
   border-radius: 0;
   color: #000;

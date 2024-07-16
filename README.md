@@ -86,7 +86,8 @@ $ wrangler pages dev . --local --persist
 ## Publish
 
 ```bash
-$ wrangler pages publish ./ --project-name legacy-of-bbs
+$ wrangler pages deploy
+# 旧コマンド : $ wrangler pages publish ./ --project-name legacy-of-bbs
 ✨ Successfully created the 'legacy-of-bbs' project.
 ```
 

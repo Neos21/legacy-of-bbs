@@ -1,11 +1,12 @@
 name = "legacy-of-bbs"
 compatibility_date = "2022-12-31"
+pages_build_output_dir = "./"
 
 # D1 : SQLite・`binding` がグローバル変数名になる・別途 Web コンソールで「D1 データベース バインディング」(グローバル変数の紐付け) が必要
-[[ d1_databases ]]
+[[d1_databases]]
 binding = "DB"
-database_name = "legacy-of-bbs"
-database_id = "eebf425b-5865-429f-960a-9ab1ea6a0c32"
+database_name = "legacy-of-bbs-20240716"
+database_id = "191d00e6-e2e0-4a68-96ac-6d63f30ca87c"
 
 # シークレット : 本番の環境変数は `$ wrangler secret put CREDENTIAL` コマンドと Web コンソールで入力する
 [vars]

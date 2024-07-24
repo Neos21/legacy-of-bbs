@@ -63,8 +63,7 @@ $ wrangler d1 execute legacy-of-bbs --local --command='DELETE FROM ranks'
 ### Setup Secret
 
 ```bash
-$ cat ./wrangler.toml
-[vars]
+$ cat ./.dev.vars
 CREDENTIAL = "test"
 
 # https://developers.cloudflare.com/workers/platform/environment-variables/

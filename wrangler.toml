@@ -7,7 +7,3 @@ pages_build_output_dir = "./"
 binding = "DB"
 database_name = "legacy-of-bbs-20240716"
 database_id = "191d00e6-e2e0-4a68-96ac-6d63f30ca87c"
-
-# シークレット : 本番の環境変数は `$ wrangler secret put CREDENTIAL` コマンドと Web コンソールで入力する
-[vars]
-CREDENTIAL = "test"

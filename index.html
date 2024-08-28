@@ -115,6 +115,9 @@ const showPosts = async (paramPage, isPushState = false) => {
   // Back・Next ボタン
   document.getElementById('nav-back-button').style.display = hasBack ? 'inline' : 'none';
   document.getElementById('nav-next-button').style.display = hasNext ? 'inline' : 'none';
+  
+  // スクロール位置を戻す
+  window.scrollTo(0, 0);
 };
 
 /** 初期表示時の処理 */

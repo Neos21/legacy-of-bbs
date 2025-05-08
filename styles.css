@@ -99,7 +99,7 @@ header h1 {
   transform: scaleX(1.1);
   user-select: none;
 }
-header h1 span {
+header h1 a {
   position: relative;
   z-index: 1;
   -webkit-text-fill-color: transparent;
@@ -107,7 +107,7 @@ header h1 span {
   background: linear-gradient(to bottom, #fc1c19 20%, #fffc4b 49%, #fffc4b 51%, #fc1c19 80%);
   -webkit-background-clip: text;
 }
-header h1 span::before {
+header h1 a::before {
   display: inline;
   content: "懐かし掲示板 BBS";
   position: absolute;
@@ -119,6 +119,20 @@ header h1 span::before {
 }
 @media (max-width: 360px) {
   header h1 { font-size: 1.3rem; }
+}
+#header-notification {
+  margin: 1em auto;
+  max-width: 600px;
+  border: 1px solid #f00;
+  padding: .5em;
+  color: #f00;
+  font-size: .86rem;
+  background: #fff0f5;
+}
+#header-notification a {
+  color: inherit;
+  text-decoration-color: #228b22;
+  font-weight: bold;
 }
 
 
